@@ -1,0 +1,48 @@
+module ALU #(parameter n=4)(
+	input signed [n-1:0] a,b,  // signed inputs
+	input [2:0] sel, 		//To select the operator
+	input clk, reset,		//clock and reset
+	output reg signed [n-1:0] out,  // signed output
+	output reg overflow	//overflow flag
+);
+	
+	reg signed [2*n-1:0] out_p;
+	reg signed [n-1:0] a_p, b_p;
+	reg [2:0] sel_p;
+	reg overflow_p;
+	always @(posedge clk) begin
+		if(reset)  begin
+			a_p<=0; b_p<=0;
+			sel_p<=0;
+		end
+		else begin
+			a_p<=a; b_p<=b;
+			sel_p<=sel;
+		end
+	end
+	always @(*) begin
+			overflow_p=0;
+			out_p=0;
+		case(sel_p)
+			3'b000: begin out_p=a_p+b_p; overflow_p=(a_p[n-1]==b_p[n-1]) && (out_p[n-1]!=a_p[n-1]); end	//addition
+			3'b001:begin out_p=a_p-b_p; overflow_p=(a_p[n-1]!=b_p[n-1]) && (out_p[n-1]!=a_p[n-1]); end	//subtraction
+			3'b010:out_p=~b_p;		// inversion 
+			3'b011:out_p=a_p | b_p;		// arithmetic OR
+			3'b100:out_p=a_p & b_p;		// arithmetic AND
+			3'b101:out_p=a_p^b_p;		// XOR
+			3'b110:out_p=a_p>>>2;		// arithmetic right shift
+			3'b111:out_p=a_p<<<2;		// arithmetic left shift
+			default: begin out_p=0; overflow_p=0; end
+		endcase
+	end
+	always @(posedge clk) begin
+		if(reset) begin
+			overflow<=0;
+			out<=0;
+		end
+		else begin
+			overflow<=overflow_p;
+			out<=out_p;
+		end
+	end
+endmodule
